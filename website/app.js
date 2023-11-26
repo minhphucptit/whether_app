@@ -1,5 +1,3 @@
-const { log } = require("console");
-
 /* Global Variables */
 const baseURL = 'http://api.openweathermap.org/data/2.5/weather?zip=';
 
@@ -32,7 +30,6 @@ const getWeather = async (baseURL, zip, key)=>{
     const res = await fetch(baseURL+zip+'&appid='+key);
     try {
         const data = await res.json();
-        console.log(data);
         return data;
     }catch(error) {
         console.log("error", error);
