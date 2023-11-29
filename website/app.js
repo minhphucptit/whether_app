@@ -1,43 +1,38 @@
 /* Global Variables */
 const baseURL = 'http://api.openweathermap.org/data/2.5/weather?zip=';
-
-// Personal API Key for OpenWeatherMap API
 const apiKey = '024320aa736b897bed602052a4eae1f6&units=imperial';
+let newDate = new Date().toLocaleDateString();
 
-// Create a new date instance dynamically with JS
-let d = new Date();
-let newDate = d.getMonth()+ 1 +' / '+ d.getDate()+' / '+ d.getFullYear();
-
-// Event listener to add function to existing HTML DOM element
 document.getElementById('generate').addEventListener('click', performAction);
 
-/* Function called by event listener */
-function performAction(e) {
+async function performAction(e) {
     const zip = document.getElementById('zip').value;
     const feelings = document.getElementById('feelings').value;
-    getWeather(baseURL, zip, apiKey)
-    .then(function(data) {
-        postData('/add', {date: newDate, temp: data.main.temp, content: feelings});
-    })
-    .then(function() {
-        updateUI();
-    })
-}
 
-
-/* Function to GET Web API Data*/
-const getWeather = async (baseURL, zip, key)=>{
-    const res = await fetch(baseURL+zip+'&appid='+key);
     try {
-        const data = await res.json();
-        return data;
-    }catch(error) {
-        console.log("error", error);
+        const weatherData = await getWeather(zip);
+        await postData('/add', 
+        { 
+            date: newDate,
+            temp: weatherData.main.temp, 
+            content: feelings 
+        });
+        updateUI();
+    } catch (error) {
+        console.error("ERR:", error);
     }
 }
 
-/* Function to POST data */
-const postData = async ( url = '', data = {})=>{
+async function getWeather(zip) {
+    const res = await fetch(`${baseURL}${zip}&appid=${apiKey}`);
+    if (!res.ok) {
+        throw new Error(`ERR: ${res.status}`);
+    }
+
+    return await res.json();
+}
+
+async function postData(url = '', data = {}) {
     const response = await fetch(url, {
         method: 'POST',
         credentials: 'same-origin',
@@ -46,23 +41,26 @@ const postData = async ( url = '', data = {})=>{
         },
         body: JSON.stringify(data),
     });
-    try {
-        const newData = await response.json();
-        console.log(newData);
-        return newData;
-    }catch(error) {
-        console.log("error", error);
+
+    if (!response.ok) {
+        throw new Error(`ERR: ${response.status}`);
     }
+
+    return await response.json();
 }
-/* Function to GET Project Data */
-const updateUI = async () => {
-    const request = await fetch('/all');
+
+async function updateUI() {
     try {
+        const request = await fetch('/all');
+        if (!request.ok) {
+            throw new Error(`ERR: ${request.status}`);
+        }
+
         const allData = await request.json();
         document.getElementById('date').innerHTML = allData.date;
         document.getElementById('temp').innerHTML = allData.temp;
         document.getElementById('content').innerHTML = allData.content;
-    }catch(error) {
-        console.log("error", error);
+    } catch (error) {
+        console.error("ERR:", error);
     }
 }
